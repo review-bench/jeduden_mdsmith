@@ -135,4 +135,6 @@ footer: |
 | 207 | 🔲     | sonnet | [LSP fix preview via ChangeAnnotation](plan/207_lsp-fix-preview.md)                                                                     |
 | 208 | 🔳     | opus   | [Kind-per-file config under `.mdsmith/kinds/`](plan/208_kind-files.md)                                                                  |
 | 209 | 🔲     | opus   | [Convention-per-file config under `.mdsmith/conventions/`](plan/209_convention-files.md)                                                |
+| 210 | 🔲     |        | [Split internal/lint along question lines](plan/210_arch-fix-lint-srp.md)                                                               |
+| 211 | 🔲     |        | [Add internal/punkt to the architecture layering map](plan/211_arch-fix-punkt-layering.md)                                              |
 <?/catalog?>
