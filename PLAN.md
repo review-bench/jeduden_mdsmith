@@ -135,6 +135,6 @@ footer: |
 | 207 | 🔲     | sonnet | [LSP fix preview via ChangeAnnotation](plan/207_lsp-fix-preview.md)                                                                     |
 | 208 | 🔳     | opus   | [Kind-per-file config under `.mdsmith/kinds/`](plan/208_kind-files.md)                                                                  |
 | 209 | 🔲     | opus   | [Convention-per-file config under `.mdsmith/conventions/`](plan/209_convention-files.md)                                                |
-| 210 | 🔲     | opus   | [Audit AST-walking rules and rewrite the ones that only need f.Lines](plan/210_lines-only-rule-audit.md)                                |
-| 211 | 🔲     | opus   | [Per-document parse cache for the LSP, keyed by version](plan/211_lsp-parse-cache.md)                                                   |
+| 215 | 🔲     | opus   | [Audit AST-walking rules and rewrite the ones that only need f.Lines](plan/215_lines-only-rule-audit.md)                                |
+| 216 | 🔲     | opus   | [Per-document parse cache for the LSP, keyed by version](plan/216_lsp-parse-cache.md)                                                   |
 <?/catalog?>
