@@ -25,23 +25,30 @@ func ValidateCrossReferences(
 	texts := collectTextNodes(f)
 	var diags []lint.Diagnostic
 	for _, cr := range sch.CrossReferences {
-		re, err := regexp.Compile(cr.Pattern)
-		if err != nil {
-			diags = append(diags, mkDiag(f.Path, 1,
-				fmt.Sprintf(
-					"cross-references: invalid pattern %q: %v",
-					cr.Pattern, err)))
-			continue
-		}
-		var skipRE *regexp.Regexp
-		if cr.SkipLinesMatching != "" {
-			skipRE, err = regexp.Compile(cr.SkipLinesMatching)
+		// Use pre-compiled regexps when available (set by parseCrossRefEntry
+		// at schema-parse time). Fall back to on-the-fly compilation for
+		// CrossRef values constructed directly (e.g. in tests).
+		re := cr.RE
+		skipRE := cr.SkipRE
+		if re == nil {
+			var err error
+			re, err = regexp.Compile(cr.Pattern)
 			if err != nil {
 				diags = append(diags, mkDiag(f.Path, 1,
 					fmt.Sprintf(
-						"cross-references: invalid skip-lines-matching %q: %v",
-						cr.SkipLinesMatching, err)))
+						"cross-references: invalid pattern %q: %v",
+						cr.Pattern, err)))
 				continue
+			}
+			if cr.SkipLinesMatching != "" {
+				skipRE, err = regexp.Compile(cr.SkipLinesMatching)
+				if err != nil {
+					diags = append(diags, mkDiag(f.Path, 1,
+						fmt.Sprintf(
+							"cross-references: invalid skip-lines-matching %q: %v",
+							cr.SkipLinesMatching, err)))
+					continue
+				}
 			}
 		}
 		diags = append(diags, checkCrossRef(f, cr, re, skipRE, slugs, texts, mkDiag)...)

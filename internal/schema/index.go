@@ -530,19 +530,26 @@ func buildCrossRefGraph(f *lint.File, sch *Schema) (map[string]string, error) {
 	}
 	texts := collectTextNodes(f)
 	for _, cr := range sch.CrossReferences {
-		re, err := regexp.Compile(cr.Pattern)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"index cross-ref-graph: invalid pattern %q: %w",
-				cr.Pattern, err)
-		}
-		var skipRE *regexp.Regexp
-		if cr.SkipLinesMatching != "" {
-			skipRE, err = regexp.Compile(cr.SkipLinesMatching)
+		// Use pre-compiled regexps when available (set by parseCrossRefEntry
+		// at schema-parse time). Fall back to on-the-fly compilation for
+		// CrossRef values constructed directly (e.g. in tests).
+		re := cr.RE
+		skipRE := cr.SkipRE
+		if re == nil {
+			var err error
+			re, err = regexp.Compile(cr.Pattern)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"index cross-ref-graph: invalid skip-lines-matching %q: %w",
-					cr.SkipLinesMatching, err)
+					"index cross-ref-graph: invalid pattern %q: %w",
+					cr.Pattern, err)
+			}
+			if cr.SkipLinesMatching != "" {
+				skipRE, err = regexp.Compile(cr.SkipLinesMatching)
+				if err != nil {
+					return nil, fmt.Errorf(
+						"index cross-ref-graph: invalid skip-lines-matching %q: %w",
+						cr.SkipLinesMatching, err)
+				}
 			}
 		}
 		groupNames := re.SubexpNames()

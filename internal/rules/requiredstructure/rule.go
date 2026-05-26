@@ -1078,7 +1078,8 @@ type schemaConfig struct {
 // schemaHeading represents a required heading from the schema.
 type schemaHeading struct {
 	Level int
-	Text  string // raw text, may contain {field} or ?
+	Text  string         // raw text, may contain {field} or ?
+	re    *regexp.Regexp // pre-compiled from Text when ContainsField(Text); nil otherwise
 }
 
 // parsedSchema holds the full parsed schema.
@@ -1437,7 +1438,21 @@ func parseSchemaWithCache(
 	syncPoints := make(map[int][]syncPoint)
 
 	for i, h := range headings {
-		schHeadings[i] = schemaHeading{Level: h.Level, Text: h.Text}
+		sh := schemaHeading{Level: h.Level, Text: h.Text}
+		if fieldinterp.ContainsField(h.Text) {
+			parts := fieldinterp.SplitOnFields(h.Text)
+			var pattern strings.Builder
+			pattern.WriteString("^")
+			for j, part := range parts {
+				pattern.WriteString(regexp.QuoteMeta(part))
+				if j < len(parts)-1 {
+					pattern.WriteString(".+")
+				}
+			}
+			pattern.WriteString("$")
+			sh.re, _ = regexp.Compile(pattern.String())
+		}
+		schHeadings[i] = sh
 		for _, f := range fieldinterp.Fields(h.Text) {
 			syncPoints[i] = append(syncPoints[i], syncPoint{Field: f})
 		}
@@ -1942,6 +1957,9 @@ func nextUnclaimed(candidates []int, claimed map[int]bool, minIdx int) int {
 }
 
 // matchesSchema checks if a document heading matches a schema heading.
+// When req.Text contains {field} references the pre-compiled req.re is
+// used (compiled once at schema-parse time) instead of building and
+// compiling a new regexp on every call.
 func matchesSchema(req schemaHeading, doc docHeading) bool {
 	// Wildcard heading: matches any text at any level.
 	if req.Text == "?" {
@@ -1950,23 +1968,12 @@ func matchesSchema(req schemaHeading, doc docHeading) bool {
 
 	// Check if the schema text contains {field} references.
 	if fieldinterp.ContainsField(req.Text) {
-		// Split the schema text on {field} patterns, quote-escape
-		// the literal parts, and join with .+ to match any value.
-		parts := fieldinterp.SplitOnFields(req.Text)
-		var pattern strings.Builder
-		pattern.WriteString("^")
-		for i, part := range parts {
-			pattern.WriteString(regexp.QuoteMeta(part))
-			if i < len(parts)-1 {
-				pattern.WriteString(".+")
-			}
-		}
-		pattern.WriteString("$")
-		re, err := regexp.Compile(pattern.String())
-		if err != nil {
+		// req.re is pre-compiled during schema construction; nil only
+		// when the pattern string was invalid, in which case no match.
+		if req.re == nil {
 			return false
 		}
-		return re.MatchString(doc.Text)
+		return req.re.MatchString(doc.Text)
 	}
 
 	return doc.Text == req.Text

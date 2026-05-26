@@ -818,6 +818,22 @@ func parseCrossRefEntry(m map[string]any, i int) (CrossRef, error) {
 		return CrossRef{}, fmt.Errorf(
 			"schema.cross-references[%d]: `must-match:` is required", i)
 	}
+	// Pre-compile regexps once at parse time so per-file validators
+	// (ValidateCrossReferences, buildCrossRefGraph) never recompile them.
+	var err error
+	cr.RE, err = regexp.Compile(cr.Pattern)
+	if err != nil {
+		return CrossRef{}, fmt.Errorf(
+			"schema.cross-references[%d]: invalid pattern %q: %w", i, cr.Pattern, err)
+	}
+	if cr.SkipLinesMatching != "" {
+		cr.SkipRE, err = regexp.Compile(cr.SkipLinesMatching)
+		if err != nil {
+			return CrossRef{}, fmt.Errorf(
+				"schema.cross-references[%d]: invalid skip-lines-matching %q: %w",
+				i, cr.SkipLinesMatching, err)
+		}
+	}
 	return cr, nil
 }
 
