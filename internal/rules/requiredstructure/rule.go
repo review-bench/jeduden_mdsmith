@@ -1434,9 +1434,22 @@ func parseSchemaWithCache(
 		headings = extractHeadings(f)
 	}
 
+	schHeadings, syncPoints := buildSchemaHeadings(headings)
+	collectBodySyncPoints(content, headings, syncPoints)
+
+	return &parsedSchema{
+		Config:     cfg,
+		Headings:   schHeadings,
+		SyncPoints: syncPoints,
+	}, includes, nil
+}
+
+// buildSchemaHeadings converts raw docHeadings into schemaHeadings,
+// pre-compiling any {field}-interpolation regexp once so matchesSchema
+// never calls regexp.Compile in the hot per-file check path.
+func buildSchemaHeadings(headings []docHeading) ([]schemaHeading, map[int][]syncPoint) {
 	schHeadings := make([]schemaHeading, len(headings))
 	syncPoints := make(map[int][]syncPoint)
-
 	for i, h := range headings {
 		sh := schemaHeading{Level: h.Level, Text: h.Text}
 		if fieldinterp.ContainsField(h.Text) {
@@ -1457,14 +1470,7 @@ func parseSchemaWithCache(
 			syncPoints[i] = append(syncPoints[i], syncPoint{Field: f})
 		}
 	}
-
-	collectBodySyncPoints(content, headings, syncPoints)
-
-	return &parsedSchema{
-		Config:     cfg,
-		Headings:   schHeadings,
-		SyncPoints: syncPoints,
-	}, includes, nil
+	return schHeadings, syncPoints
 }
 
 // extractSchemaHeadings walks the schema AST, collecting headings and
