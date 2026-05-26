@@ -448,24 +448,6 @@ func TestParseInline_CrossRefErrors(t *testing.T) {
 			}},
 			want: "must-match",
 		},
-		{
-			name: "invalid pattern regex",
-			raw: map[string]any{"cross-references": []any{
-				map[string]any{"pattern": "[bad", "must-match": "Step {n}"},
-			}},
-			want: "invalid pattern",
-		},
-		{
-			name: "invalid skip-lines-matching regex",
-			raw: map[string]any{"cross-references": []any{
-				map[string]any{
-					"pattern":             `\bStep (\d+)\b`,
-					"must-match":          "Step {n}",
-					"skip-lines-matching": "[bad",
-				},
-			}},
-			want: "invalid skip-lines-matching",
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -474,6 +456,30 @@ func TestParseInline_CrossRefErrors(t *testing.T) {
 			assert.Contains(t, err.Error(), tc.want)
 		})
 	}
+}
+
+// TestParseInline_CrossRefRegexpErrors covers the regexp compile error
+// paths added to parseCrossRefEntry. Kept separate so TestParseInline_CrossRefErrors
+// stays within the funlen limit.
+func TestParseInline_CrossRefRegexpErrors(t *testing.T) {
+	t.Run("invalid pattern regex", func(t *testing.T) {
+		_, err := ParseInline(map[string]any{"cross-references": []any{
+			map[string]any{"pattern": "[bad", "must-match": "Step {n}"},
+		}}, "test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid pattern")
+	})
+	t.Run("invalid skip-lines-matching regex", func(t *testing.T) {
+		_, err := ParseInline(map[string]any{"cross-references": []any{
+			map[string]any{
+				"pattern":             `\bStep (\d+)\b`,
+				"must-match":          "Step {n}",
+				"skip-lines-matching": "[bad",
+			},
+		}}, "test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid skip-lines-matching")
+	})
 }
 
 func TestParseInline_AcronymsErrors(t *testing.T) {
